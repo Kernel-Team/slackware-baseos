@@ -4,7 +4,7 @@
 export SFS=/mnt/sfs
 export RDIR=$SFS/slacksrc
 #*******************************************************************
-export SRCDIR=$SFS/sources
+export SRCDIR=$SFS/sources;mkdir $SRCDIR
 SFS_TGT=$(uname -m)el-sfs-linux-gnu
 export SFS_TGT
 #mips64el-sfs-linux-gnu
@@ -54,13 +54,14 @@ echo_begin () {
         fi
     done
     echo -e "$RED" "You choose to build 'tools' for SFS." "$NORMAL"
+    export LC_ALL="en_US.UTF-8"
 }
 
 copy_src () {
 #*****************************
     cd $RDIR/a/bash/
 	export BASHVER=${VERSION:-$(echo bash-*.tar.?z* | rev | cut -f 3- -d . | cut -f 1 -d - | rev)}
-	cp -v $RDIR/a/bash/bash-$BASHVER.tar.gz $SRCDIR || exit 1
+	cp -v $RDIR/a/bash/bash-$BASHVER.tar.xz $SRCDIR || exit 1
     cd $RDIR/d/binutils
 	export BINUVER=${VERSION:-$(echo binutils-*.tar.?z | rev | cut -f 3- -d . | cut -f 1 -d - | rev)}
     cp -v $RDIR/d/binutils/binutils-$BINUVER.tar.xz $SRCDIR || exit 1
@@ -81,7 +82,7 @@ copy_src () {
     cp -v $RDIR/a/file/file-$FILEVER.tar.?z $SRCDIR || exit 1
     cd $RDIR/a/findutils
 	export FINDVER=${VERSION:-$(echo findutils-*.tar.?z | cut -d - -f 2 | rev | cut -f 3- -d . | rev)}
-    cp -v $RDIR/a/findutils/findutils-$FINDVER.tar.gz $SRCDIR || exit 1
+    cp -v $RDIR/a/findutils/findutils-$FINDVER.tar.xz $SRCDIR || exit 1
     cd $RDIR/a/gawk
 	export GAWKVER=${VERSION:-$(echo gawk-*.tar.?z | cut -d - -f 2 | rev | cut -f 3- -d . | rev)}
     cp -v $RDIR/a/gawk/gawk-$GAWKVER.tar.xz $SRCDIR || exit 1
@@ -118,10 +119,10 @@ copy_src () {
     cp -v $RDIR/d/automake/automake-$AUTOMAKEVER.tar.xz $SRCDIR || exit 1
     cd $RDIR/d/make
 	export MAKEVER=${VERSION:-$(echo make-*.tar.?z2 | cut -d - -f 2 | rev | cut -f 3- -d . | rev)}
-    cp -v $RDIR/d/make/make-$MAKEVER.tar.gz $SRCDIR || exit 1
+    cp -v $RDIR/d/make/make-$MAKEVER.tar.bz2 $SRCDIR || exit 1
     cd $RDIR/l/libmpc
 	export LIBMPCVER=${VERSION:-$(echo libpmc-*.tar.?z | cut -d - -f 2 | rev | cut -f 3- -d . | rev)}
-    cp -v $RDIR/l/libmpc/mpc-$LIBMPCVER.tar.gz $SRCDIR || exit 1
+    cp -v $RDIR/l/libmpc/mpc-$LIBMPCVER.tar.xz $SRCDIR || exit 1
     cd $RDIR/l/mpfr
 	export MPFRVER=${VERSION:-$(echo mpfr-*.tar.?z | cut -d - -f 2 | rev | cut -f 3- -d . | rev)}
     cp -v $RDIR/l/mpfr/mpfr-$MPFRVER.tar.xz $SRCDIR || exit 1
@@ -206,7 +207,7 @@ gcc_build_sp1 () {
     mv -v mpfr-$MPFRVER mpfr
     tar xvf ../gmp-$GMPVER.tar.xz
     mv -v gmp-$GMPVER gmp
-    tar xvf ../mpc-$LIBMPCVER.tar.gz
+    tar xvf ../mpc-$LIBMPCVER.tar.xz
     mv -v mpc-$LIBMPCVER mpc
 
 	for file in gcc/config/{linux,i386/linux{,64}}.h
@@ -354,7 +355,7 @@ tar xvf gcc-$SRCVER.tar.?z && cd gcc-$SRCVER
 
 #cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
 #  `dirname $($SFS_TGT-gcc -print-libgcc-file-name)`/include-fixed/limits.h
-cat gcc/limitx.h gcc/glimits.h gcc/limity.h > /tools/lib/gcc/mips64-sfs-linux-gnu/9.2.0/include-fixed/limits.h
+cat gcc/limitx.h gcc/glimits.h gcc/limity.h > /tools/lib/gcc/mips64el-sfs-linux-gnu/7.3.0/include-fixed/limits.h
 
 
 for file in gcc/config/{linux,i386/linux{,64}}.h
@@ -381,7 +382,7 @@ esac
     mv -v mpfr-$MPFRVER mpfr
     tar xvf ../gmp-$GMPVER.tar.xz
     mv -v gmp-$GMPVER gmp
-    tar xvf ../mpc-$LIBMPCVER.tar.gz
+    tar xvf ../mpc-$LIBMPCVER.tar.xz
     mv -v mpc-$LIBMPCVER mpc
 
    mkdir -v build && cd build
@@ -427,6 +428,7 @@ m4_build () {
 
 ncurses_build () {
 #*****************************
+    #export CPPFLAGS="-P"
     tar xvf ncurses-$NCURVER.tar.gz && cd ncurses-$NCURVER
 	 
 	 sed -i s/mawk// configure
@@ -448,7 +450,7 @@ ncurses_build () {
 
 bash_build () {
 #*****************************
-    tar xvf bash-$BASHVER.tar.gz && cd bash-$BASHVER
+    tar xvf bash-$BASHVER.tar.xz && cd bash-$BASHVER
 
     ./configure --prefix=/tools --without-bash-malloc || exit 1
 
@@ -513,8 +515,8 @@ diffutils_build () {
 file_build () {
 #*****************************
     tar xvf file-$FILEVER.tar.?z && cd file-$FILEVER
-
-    ./configure --prefix=/tools || exit 1
+    autoreconf -fi
+    ./configure --prefix=/tools --enable-fsect-man5 --disable-rpath || exit 1
 
     make || exit 1
     make install || exit 1
@@ -525,7 +527,7 @@ file_build () {
 
 findutils_build () {
 #*****************************
-    tar xvf findutils-$FINDVER.tar.gz && cd findutils-$FINDVER
+    tar xvf findutils-$FINDVER.tar.xz && cd findutils-$FINDVER
 
 # 	patch to build with glibc-2.30 (from LFS)
 	sed -i 's/IO_ftrylockfile/IO_EOF_SEEN/' gl/lib/*.c
@@ -619,7 +621,7 @@ automake_build () {
 
 make_build () {
 #*****************************
-    tar xvf make-$MAKEVER.tar.gz ;cd make-4.2.1
+    tar xvf make-$MAKEVER.tar.bz2 ;cd make-$MAKEVER
 
     ./configure --prefix=/tools --without-guile || exit 1
 
@@ -649,7 +651,7 @@ perl_build () {
 
     sh Configure -des -Dprefix=/tools -Dlibs=-lm || exit 1
     make || exit 1
-    cp -v perl cpan/podlators/scripts/pod2man /tools/bin || exit 1
+#    cp -v perl cpan/podlators/scripts/pod2man /tools/bin || exit 1
     mkdir -pv /tools/lib/perl5/$PERLVER || exit 1
     cp -Rv lib/* /tools/lib/perl5/$PERLVER || exit 1
     cd ..
@@ -836,8 +838,6 @@ echo "  diffutils_build"
 diffutils_build
 echo "  file_build"
 file_build
-echo "  findutils_build"
-findutils_build
 echo "  gawk_build"
 gawk_build
 echo "  gettext_build"
@@ -877,7 +877,3 @@ clean_sources
 echo "  echo_end"
 echo_end
 exit 0
-
-
-
-
