@@ -210,19 +210,15 @@ gcc_build_sp1 () {
     tar xvf ../mpc-$LIBMPCVER.tar.xz
     mv -v mpc-$LIBMPCVER mpc
 
-	for file in gcc/config/{linux,i386/linux{,64}}.h
-	do
-	  cp -uv $file{,.orig}
-	  sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
-		  -e 's@/usr@/tools@g' $file.orig > $file
-	  echo '
+	for file in gcc/config/linux.h gcc/config/mips/linux.h do
+	cp -uv $file{,.orig}
+	sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
+	-e 's@/usr@/tools@g' $file.orig > $file
+	echo '
 	#undef STANDARD_STARTFILE_PREFIX_1
 	#undef STANDARD_STARTFILE_PREFIX_2
-	#define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"
-	#define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
-	  touch $file.orig
+	#define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/" #define STANDARD_STARTFILE_PREFIX_2 ""' >> $file touch $file.orig
 	done
-
 	case $(uname -m) in
 	  x86_64)
 		sed -e '/m64=/s/lib64/lib/' \
@@ -232,8 +228,8 @@ gcc_build_sp1 () {
 
 	mkdir -v build && cd build
 
-	../configure                                       \
-	--target=$SFS_TGT                              \
+    ../configure                                       \
+    --target=$SFS_TGT                              \
     --prefix=/tools                                \
     --with-sysroot=$LFS                            \
     --with-newlib                                  \
@@ -254,8 +250,8 @@ gcc_build_sp1 () {
     --disable-libvtv                               \
     --disable-libcilkrts                           \
     --disable-libstdcxx                            \
-    --with-abi=64	                           \
-	--enable-languages=c,c++ || exit 1
+    --with-abi=64 --with-arch=mips64r2 --with-tune=loongson3a \
+    --enable-languages=c,c++ || exit 1
 
 	make || exit 1
 	make install || exit 1
@@ -328,9 +324,8 @@ binutils_build_sp2 () {
 	CC=$SFS_TGT-gcc                \
 	AR=$SFS_TGT-ar                 \
 	RANLIB=$SFS_TGT-ranlib         \
-
-
 	../configure                   \
+		--build=$SFS_TGT	   \
 		--prefix=/tools            \
 		--disable-nls              \
 		--disable-werror           \
@@ -357,19 +352,15 @@ tar xvf gcc-$SRCVER.tar.?z && cd gcc-$SRCVER
 #  `dirname $($SFS_TGT-gcc -print-libgcc-file-name)`/include-fixed/limits.h
 cat gcc/limitx.h gcc/glimits.h gcc/limity.h > /tools/lib/gcc/mips64el-sfs-linux-gnu/7.3.0/include-fixed/limits.h
 
-
-for file in gcc/config/{linux,i386/linux{,64}}.h
-do
-  cp -uv $file{,.orig}
-  sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
-      -e 's@/usr@/tools@g' $file.orig > $file
-  echo '
-#undef STANDARD_STARTFILE_PREFIX_1
-#undef STANDARD_STARTFILE_PREFIX_2
-#define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/"
-#define STANDARD_STARTFILE_PREFIX_2 ""' >> $file
-  touch $file.orig
-done
+	for file in gcc/config/linux.h gcc/config/mips/linux.h do
+	cp -uv $file{,.orig}
+	sed -e 's@/lib\(64\)\?\(32\)\?/ld@/tools&@g' \
+	-e 's@/usr@/tools@g' $file.orig > $file
+	echo '
+	#undef STANDARD_STARTFILE_PREFIX_1
+	#undef STANDARD_STARTFILE_PREFIX_2
+	#define STANDARD_STARTFILE_PREFIX_1 "/tools/lib/" #define STANDARD_STARTFILE_PREFIX_2 ""' >> $file touch $file.orig
+	done
 
 case $(uname -m) in
   x86_64)
@@ -391,8 +382,6 @@ esac
 	CXX=$SFS_TGT-g++                                   \
 	AR=$SFS_TGT-ar                                     \
 	RANLIB=$SFS_TGT-ranlib                             \
-
-
 	../configure                                       \
 		 --prefix=/tools                                \
 		 --with-local-prefix=/tools                     \
@@ -402,6 +391,7 @@ esac
 		 --disable-multilib                             \
 		 --disable-bootstrap                            \
 		 --with-abi=64 					\
+    		 --with-abi=64 --with-arch=mips64r2 --with-tune=loongson3a \
 		 --disable-libgompp || exit 1
 
     make || exit 1
